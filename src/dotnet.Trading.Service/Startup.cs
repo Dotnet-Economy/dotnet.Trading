@@ -2,6 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using dotnet.Common.Identity;
+using dotnet.Common.MassTransit;
+using dotnet.Common.MongoDB;
+using dotnet.Common.Settings;
+using dotnet.Trading.Service.StateMachines;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,6 +32,9 @@ namespace dotnet.Trading.Service
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMongo()
+                    .AddJwtBearerAuthentication();
+            AddMassTransit(services);
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -48,12 +57,33 @@ namespace dotnet.Trading.Service
 
             app.UseRouting();
 
+            app.UseAuthentication();
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+        }
+
+        private void AddMassTransit(IServiceCollection services)
+        {
+            services.AddMassTransit(configure =>
+            {
+                configure.usingDotnetEconomyRabbitMq();
+                configure.AddSagaStateMachine<PurchaseStateMachine, PurchaseState>()
+                        .MongoDbRepository(repo =>
+                        {
+                            var serviceSettings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+                            var mongoSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
+                            repo.Connection = mongoSettings.ConnectionString;
+                            repo.DatabaseName = serviceSettings.ServiceName;
+                        });
+            });
+
+            //Opens up the bus that controls where the messages go
+            services.AddMassTransitHostedService();
         }
     }
 }
