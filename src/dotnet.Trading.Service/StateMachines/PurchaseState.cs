@@ -2,7 +2,7 @@ using System;
 using Automatonymous;
 using MassTransit.Saga;
 
-namespace dotnet.Trading.Service
+namespace dotnet.Trading.Service.StateMachines
 {
     public class PurchaseState : SagaStateMachineInstance, ISagaVersion
     {
