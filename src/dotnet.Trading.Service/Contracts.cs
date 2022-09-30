@@ -8,4 +8,7 @@ namespace dotnet.Trading.Service.Contracts
         int Quantity,
         Guid CorrelationId
     );
+
+    // TODO: Add event for querying current machine state
+    public record GetPurchaseState(Guid CorrelationId);
 }

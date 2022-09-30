@@ -36,7 +36,12 @@ namespace dotnet.Trading.Service
                     .AddJwtBearerAuthentication();
             AddMassTransit(services);
 
-            services.AddControllers();
+            services.AddControllers(options =>
+            {
+                options.SuppressAsyncSuffixInActionNames = false;
+            })
+            .AddJsonOptions(options => options.JsonSerializerOptions.IgnoreNullValues = true);
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "dotnet.Trading.Service", Version = "v1" });
@@ -84,6 +89,8 @@ namespace dotnet.Trading.Service
 
             //Opens up the bus that controls where the messages go
             services.AddMassTransitHostedService();
+            //Registers every client used across the application
+            services.AddGenericRequestClient();
         }
     }
 }
