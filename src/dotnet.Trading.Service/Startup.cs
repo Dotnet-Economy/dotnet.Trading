@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using dotnet.Common.Identity;
 using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
 using dotnet.Common.Settings;
+using dotnet.Trading.Service.Entities;
 using dotnet.Trading.Service.StateMachines;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
@@ -33,6 +35,7 @@ namespace dotnet.Trading.Service
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMongo()
+                    .AddMongoRepository<CatalogItem>("catalogitems")
                     .AddJwtBearerAuthentication();
             AddMassTransit(services);
 
@@ -77,6 +80,9 @@ namespace dotnet.Trading.Service
             services.AddMassTransit(configure =>
             {
                 configure.usingDotnetEconomyRabbitMq();
+                //Ensures all consumers found in the Entry Assembly(Assembly that starts the app)
+                // are added with MT, so they can react when messages arrive 
+                configure.AddConsumers(Assembly.GetEntryAssembly());
                 configure.AddSagaStateMachine<PurchaseStateMachine, PurchaseState>()
                         .MongoDbRepository(repo =>
                         {
