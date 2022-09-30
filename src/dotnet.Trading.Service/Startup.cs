@@ -8,7 +8,9 @@ using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
 using dotnet.Common.Settings;
 using dotnet.Trading.Service.Entities;
+using dotnet.Trading.Service.Exceptions;
 using dotnet.Trading.Service.StateMachines;
+using GreenPipes;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -79,7 +81,11 @@ namespace dotnet.Trading.Service
         {
             services.AddMassTransit(configure =>
             {
-                configure.usingDotnetEconomyRabbitMq();
+                configure.usingDotnetEconomyRabbitMq(retryConfigurator =>
+                {
+                    retryConfigurator.Interval(3, TimeSpan.FromSeconds(5));
+                    retryConfigurator.Ignore(typeof(UnknownItemException));
+                });
                 //Ensures all consumers found in the Entry Assembly(Assembly that starts the app)
                 // are added with MT, so they can react when messages arrive 
                 configure.AddConsumers(Assembly.GetEntryAssembly());

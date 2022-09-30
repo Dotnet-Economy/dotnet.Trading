@@ -1,5 +1,6 @@
 using System;
 using Automatonymous;
+using dotnet.Trading.Service.Activities;
 using dotnet.Trading.Service.Contracts;
 
 namespace dotnet.Trading.Service.StateMachines
@@ -42,7 +43,14 @@ namespace dotnet.Trading.Service.StateMachines
                     context.Instance.Received = DateTimeOffset.UtcNow;
                     context.Instance.LastUpdated = context.Instance.Received;
                 })
+                .Activity(x => x.OfType<CalculatePurchaseTotalActivity>())
                 .TransitionTo(Accepted)
+                .Catch<Exception>(ex => ex.Then(context =>
+                {
+                    context.Instance.ErrorMessage = context.Exception.Message;
+                    context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+                }).TransitionTo(Faulted))
+
             );
         }
 
