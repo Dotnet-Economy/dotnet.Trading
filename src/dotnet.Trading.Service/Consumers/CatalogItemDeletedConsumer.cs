@@ -8,7 +8,7 @@ namespace dotnet.Trading.Service.Consumers
 {
     public class CatalogItemDeletedConsumer : IConsumer<CatalogItemDeleted>
     {
-        public readonly IRepository<CatalogItem> repository;
+        private readonly IRepository<CatalogItem> repository;
 
         public CatalogItemDeletedConsumer(IRepository<CatalogItem> repository)
         {

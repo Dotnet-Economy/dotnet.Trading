@@ -8,7 +8,7 @@ namespace dotnet.Trading.Service.Consumers
 {
     public class CatalogItemUpdatedConsumer : IConsumer<CatalogItemUpdated>
     {
-        public readonly IRepository<CatalogItem> repository;
+        private readonly IRepository<CatalogItem> repository;
 
         public CatalogItemUpdatedConsumer(IRepository<CatalogItem> repository)
         {

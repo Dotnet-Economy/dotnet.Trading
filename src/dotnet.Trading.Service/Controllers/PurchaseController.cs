@@ -29,24 +29,23 @@ namespace dotnet.Trading.Service.Controllers
         {
             var userId = User.FindFirstValue("sub");
             //TODO: Best practice?
-            var correlationId = Guid.NewGuid();
             var message = new PurchaseRequested(
                 Guid.Parse(userId),
                 purchase.ItemId.Value,
                 purchase.Quantity,
-                correlationId
+                purchase.IdempotencyId.Value
             );
 
             await publishEndpoint.Publish(message);
 
-            return AcceptedAtAction(nameof(GetStatusAsync), new { correlationId }, new { correlationId });
+            return AcceptedAtAction(nameof(GetStatusAsync), new { purchase.IdempotencyId }, new { purchase.IdempotencyId });
         }
 
-        [HttpGet("status/{correlationId}")]
-        public async Task<ActionResult<PurchaseDto>> GetStatusAsync(Guid correlationId)
+        [HttpGet("status/{idempotencyId}")]
+        public async Task<ActionResult<PurchaseDto>> GetStatusAsync(Guid idempotencyId)
         {
             var response = await purchaseClient
-            .GetResponse<PurchaseState>(new GetPurchaseState(correlationId));
+            .GetResponse<PurchaseState>(new GetPurchaseState(idempotencyId));
             var purchaseState = response.Message;
             var purchase = new PurchaseDto(
                 purchaseState.UserId,

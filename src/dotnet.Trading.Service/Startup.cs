@@ -7,8 +7,12 @@ using dotnet.Common.Identity;
 using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
 using dotnet.Common.Settings;
+using dotnet.Identity.Contracts;
+using dotnet.Inventory.Contracts;
 using dotnet.Trading.Service.Entities;
 using dotnet.Trading.Service.Exceptions;
+using dotnet.Trading.Service.Settings;
+using dotnet.Trading.Service.SignalR;
 using dotnet.Trading.Service.StateMachines;
 using GreenPipes;
 using MassTransit;
@@ -16,6 +20,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +43,8 @@ namespace dotnet.Trading.Service
         {
             services.AddMongo()
                     .AddMongoRepository<CatalogItem>("catalogitems")
+                    .AddMongoRepository<InventoryItem>("inventoryitems")
+                    .AddMongoRepository<ApplicationUser>("users")
                     .AddJwtBearerAuthentication();
             AddMassTransit(services);
 
@@ -51,6 +58,10 @@ namespace dotnet.Trading.Service
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "dotnet.Trading.Service", Version = "v1" });
             });
+
+            services.AddSingleton<IUserIdProvider, UserIdProvider>()
+                    .AddSingleton<MessageHub>()
+                    .AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -74,6 +85,7 @@ namespace dotnet.Trading.Service
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<MessageHub>("/messagehub");
             });
         }
 
@@ -89,7 +101,7 @@ namespace dotnet.Trading.Service
                 //Ensures all consumers found in the Entry Assembly(Assembly that starts the app)
                 // are added with MT, so they can react when messages arrive 
                 configure.AddConsumers(Assembly.GetEntryAssembly());
-                configure.AddSagaStateMachine<PurchaseStateMachine, PurchaseState>()
+                configure.AddSagaStateMachine<PurchaseStateMachine, PurchaseState>(sagaConfigurator => { sagaConfigurator.UseInMemoryOutbox(); })
                         .MongoDbRepository(repo =>
                         {
                             var serviceSettings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
@@ -98,6 +110,11 @@ namespace dotnet.Trading.Service
                             repo.DatabaseName = serviceSettings.ServiceName;
                         });
             });
+
+            var queueSettings = Configuration.GetSection(nameof(QueueSettings)).Get<QueueSettings>();
+            EndpointConvention.Map<GrantItems>(new Uri(queueSettings.GrantItemsQueueAddress));
+            EndpointConvention.Map<ComotOkubo>(new Uri(queueSettings.ComotOkuboQueueAddress));
+            EndpointConvention.Map<SubtractItems>(new Uri(queueSettings.SubtractItemsQueueAddress));
 
             //Opens up the bus that controls where the messages go
             services.AddMassTransitHostedService();
