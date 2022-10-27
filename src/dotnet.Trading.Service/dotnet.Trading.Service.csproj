@@ -6,13 +6,10 @@
 
   <ItemGroup>
     <PackageReference Include="dotnet.Catalog.Contracts" Version="1.0.2" />
-    <PackageReference Include="dotnet.Common" Version="1.0.6" />
+    <PackageReference Include="dotnet.Common" Version="1.0.8" />
     <PackageReference Include="dotnet.Identity.Contracts" Version="1.0.2" />
     <PackageReference Include="dotnet.Inventory.Contracts" Version="1.0.2" />
-    <PackageReference Include="MassTransit" Version="7.3.1" />
-    <PackageReference Include="MassTransit.AspNetCore" Version="7.3.1" />
     <PackageReference Include="MassTransit.MongoDB" Version="7.3.1" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="7.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
   </ItemGroup>
 

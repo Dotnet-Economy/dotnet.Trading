@@ -93,7 +93,7 @@ namespace dotnet.Trading.Service
         {
             services.AddMassTransit(configure =>
             {
-                configure.usingDotnetEconomyRabbitMq(retryConfigurator =>
+                configure.usingDotnetEconomyMessageBroker(Configuration, retryConfigurator =>
                 {
                     retryConfigurator.Interval(3, TimeSpan.FromSeconds(5));
                     retryConfigurator.Ignore(typeof(UnknownItemException));
