@@ -7,7 +7,7 @@ Dotnet Economy Trading microservice
 ```powershell
 $env:GH_OWNER="Dotnet-Economy"
 $env:GH_PAT="[PAT HERE]"
-$version="1.0.1"
+$version="1.0.2"
 $appname="dotneteconomy"
 docker build --secret id=GH_OWNER --secret id=GH_PAT -t "$appname.azurecr.io/dotnet.trading:$version" .
 ```

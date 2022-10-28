@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="dotnet.Catalog.Contracts" Version="1.0.2" />
-    <PackageReference Include="dotnet.Common" Version="1.0.9" />
+    <PackageReference Include="dotnet.Common" Version="1.0.10" />
     <PackageReference Include="dotnet.Identity.Contracts" Version="1.0.2" />
     <PackageReference Include="dotnet.Inventory.Contracts" Version="1.0.2" />
     <PackageReference Include="MassTransit.MongoDB" Version="7.3.1" />
