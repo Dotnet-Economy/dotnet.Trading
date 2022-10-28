@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using dotnet.Common.HealthChecks;
 using dotnet.Common.Identity;
 using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
@@ -62,6 +63,9 @@ namespace dotnet.Trading.Service
             services.AddSingleton<IUserIdProvider, UserIdProvider>()
                     .AddSingleton<MessageHub>()
                     .AddSignalR();
+
+            services.AddHealthChecks()
+                    .AddMongoDb();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -86,6 +90,7 @@ namespace dotnet.Trading.Service
             {
                 endpoints.MapControllers();
                 endpoints.MapHub<MessageHub>("/messagehub");
+                endpoints.MapDotnetEconomyHealthChecks();
             });
         }
 
