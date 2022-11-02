@@ -44,3 +44,9 @@ az aks pod-identity add -g $appname --cluster-name $appname --namespace $namespa
 $IDENTITY_CLIENT_ID=az identity show -g $appname -n $namespace --query clientId -otsv
 az keyvault set-policy -n $appname --secret-permissions get list --spn $IDENTITY_CLIENT_ID
 ```
+
+## Creating the Kubernetes resources
+
+```powershell
+kubectl apply -f ./kubernetes/trading.yaml -n $namespace
+```
