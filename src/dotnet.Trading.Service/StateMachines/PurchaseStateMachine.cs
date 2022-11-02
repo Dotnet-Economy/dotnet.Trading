@@ -32,6 +32,9 @@ namespace dotnet.Trading.Service.StateMachines
             ConfigureInitialState();
             ConfigureAny();
             ConfigureAccepted();
+            ConfigureItemsGranted();
+            ConfigureFaulted();
+            ConfigureCompleted();
             this.hub = hub;
         }
 
