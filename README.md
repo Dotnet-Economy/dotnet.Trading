@@ -7,7 +7,7 @@ Dotnet Economy Trading microservice
 ```powershell
 $env:GH_OWNER="Dotnet-Economy"
 $env:GH_PAT="[PAT HERE]"
-$version="1.0.2"
+$version="1.0.3"
 $appname="dotneteconomy"
 docker build --secret id=GH_OWNER --secret id=GH_PAT -t "$appname.azurecr.io/dotnet.trading:$version" .
 ```
@@ -49,4 +49,18 @@ az keyvault set-policy -n $appname --secret-permissions get list --spn $IDENTITY
 
 ```powershell
 kubectl apply -f ./kubernetes/trading.yaml -n $namespace
+```
+
+## Installing the Helm chart
+
+```powershell
+$helmUser=[guid]::Empty.Guid
+$helmPassword=az acr login --name $appname --expose-token --output tsv --query accessToken
+
+$env:HELM_EXPERIMENTAL_OCI=1
+
+helm registry login "$appname.azurecr.io" --username  $helmUser --password $helmPassword
+
+$chartVersion="0.1.0"
+helm upgrade "$namespace-service" oci://$appname.azurecr.io/helm/microservice --version $chartVersion -f ./helm/values.yaml -n $namespace --install #--debug
 ```

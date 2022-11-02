@@ -1,0 +1,11 @@
+microserviceName: "trading"
+
+image:
+  repository: dotneteconomy.azurecr.io/dotnet.trading
+  tag: 1.0.3
+
+envVariables:
+  ServiceSettings__Authority: https://dotneteconomy.eastus.cloudapp.azure.com/identity-svc
+
+container:
+  port: 5006
