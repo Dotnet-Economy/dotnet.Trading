@@ -64,3 +64,10 @@ helm registry login "$appname.azurecr.io" --username  $helmUser --password $helm
 $chartVersion="0.1.0"
 helm upgrade "$namespace-service" oci://$appname.azurecr.io/helm/microservice --version $chartVersion -f ./helm/values.yaml -n $namespace --install #--debug
 ```
+
+## Required organisation secrets for Github workflow
+
+GH_PAT: Created in GitHub user profile --> Settings --> Developer settings --> Personal access token
+AZURE_TENANT_ID: From AAD properties page
+AZURE_SUBSCRIPTION_ID: From Azure Portal Subscription
+AZURE_CLIENT_ID: From AAD App registration
