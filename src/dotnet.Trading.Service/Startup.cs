@@ -6,6 +6,7 @@ using dotnet.Common.Identity;
 using dotnet.Common.Logging;
 using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
+using dotnet.Common.OpenTelemetry;
 using dotnet.Common.Settings;
 using dotnet.Identity.Contracts;
 using dotnet.Inventory.Contracts;
@@ -65,24 +66,10 @@ namespace dotnet.Trading.Service
             services.AddHealthChecks()
                     .AddMongoDb();
 
-            services.AddSeqLogging(Configuration);
+            services.AddSeqLogging(Configuration)
+                    .AddTracing(Configuration);
 
-            services.AddOpenTelemetryTracing(builder =>
-            {
-                var serviceSettings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
-
-                builder.AddSource(serviceSettings.ServiceName)
-                        .AddSource("MassTransit")
-                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: serviceSettings.ServiceName))
-                        .AddHttpClientInstrumentation()
-                        .AddAspNetCoreInstrumentation()
-                        .AddJaegerExporter(options => {
-                            var jaegerSetttings = Configuration.GetSection(nameof(JaegerSetttings)).Get<JaegerSetttings>();
-
-                            options.AgentHost = jaegerSetttings.Host;
-                            options.AgentPort = jaegerSetttings.Port;
-                        });
-            });
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
