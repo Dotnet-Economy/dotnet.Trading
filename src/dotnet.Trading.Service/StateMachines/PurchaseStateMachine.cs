@@ -6,6 +6,7 @@ using dotnet.Trading.Service.Activities;
 using dotnet.Trading.Service.Contracts;
 using dotnet.Trading.Service.SignalR;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 
 namespace dotnet.Trading.Service.StateMachines
 {
@@ -13,6 +14,7 @@ namespace dotnet.Trading.Service.StateMachines
     {
 
         private readonly MessageHub hub;
+        private readonly ILogger<PurchaseStateMachine> logger;
         public State Accepted { get; }
         public State ItemsGranted { get; }
         public State Completed { get; }
@@ -25,7 +27,7 @@ namespace dotnet.Trading.Service.StateMachines
         public Event<Fault<GrantItems>> GrantItemsFaulted { get; }
         public Event<Fault<ComotOkubo>> ComotOkuboFaulted { get; }
 
-        public PurchaseStateMachine(MessageHub hub)
+        public PurchaseStateMachine(MessageHub hub, ILogger<PurchaseStateMachine> logger)
         {
             InstanceState(state => state.CurrentState);
             ConfigureEvents();
@@ -36,6 +38,7 @@ namespace dotnet.Trading.Service.StateMachines
             ConfigureFaulted();
             ConfigureCompleted();
             this.hub = hub;
+            this.logger = logger;
         }
 
         private void ConfigureEvents()
@@ -63,6 +66,8 @@ namespace dotnet.Trading.Service.StateMachines
                     context.Instance.Quantity = context.Data.Quantity;
                     context.Instance.Received = DateTimeOffset.UtcNow;
                     context.Instance.LastUpdated = context.Instance.Received;
+                    logger.LogInformation("Calculating total price for purchase with Correlation ID:{CorrelationId}...", 
+                    context.Instance.CorrelationId);
                 })
                 .Activity(x => x.OfType<CalculatePurchaseTotalActivity>())
                 .Send((context => new GrantItems(
@@ -76,6 +81,11 @@ namespace dotnet.Trading.Service.StateMachines
                     {
                         context.Instance.ErrorMessage = context.Exception.Message;
                         context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+                        logger.LogError(
+                            context.Exception, 
+                            "Error calculating total price for purchase with Correlation ID:{CorrelationId}. Error:{ErrorMessage}", 
+                            context.Instance.CorrelationId,
+                            context.Instance.ErrorMessage);
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Instance))
@@ -83,7 +93,6 @@ namespace dotnet.Trading.Service.StateMachines
 
             );
         }
-
 
         private void ConfigureAccepted()
         {
@@ -93,6 +102,9 @@ namespace dotnet.Trading.Service.StateMachines
                 .Then(context =>
                 {
                     context.Instance.LastUpdated = DateTimeOffset.Now;
+                    logger.LogInformation("Items of purchase with Correlation ID:{CorrelationId} have been granted to User:{UserId}", 
+                    context.Instance.CorrelationId,
+                    context.Instance.UserId);
                 })
                 .Send(context => new ComotOkubo(
                     context.Instance.UserId,
@@ -105,6 +117,10 @@ namespace dotnet.Trading.Service.StateMachines
                 {
                     context.Instance.ErrorMessage = context.Data.Exceptions[0].Message;
                     context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+                    logger.LogError(
+                            "Error grnating items for purchase with Correlation ID:{CorrelationId}. Error:{ErrorMessage}", 
+                            context.Instance.CorrelationId,
+                            context.Instance.ErrorMessage);
                 })
                 .TransitionTo(Faulted)
                 .ThenAsync(async context => await hub.SendStatusAsync(context.Instance))
@@ -128,6 +144,11 @@ namespace dotnet.Trading.Service.StateMachines
                     .Then(context =>
                     {
                         context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+                        logger.LogInformation(
+                            "The total price of purchase with CorrelationId:{CorrelationId} don comot from User:{UserId}. Purchase complete",
+                            context.Instance.CorrelationId,
+                            context.Instance.UserId
+                        );
                     })
                     .TransitionTo(Completed)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Instance)),
@@ -142,6 +163,10 @@ namespace dotnet.Trading.Service.StateMachines
                     {
                         context.Instance.ErrorMessage = context.Data.Exceptions[0].Message;
                         context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+                        logger.LogError(
+                            "Failed to comot the total price of purchase with CorrelationId:{CorrelationId} from User:{UserId}",
+                            context.Instance.CorrelationId,
+                            context.Instance.UserId);
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Instance))

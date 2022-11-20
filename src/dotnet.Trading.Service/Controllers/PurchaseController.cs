@@ -7,6 +7,7 @@ using dotnet.Trading.Service.StateMachines;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace dotnet.Trading.Service.Controllers
 {
@@ -17,18 +18,26 @@ namespace dotnet.Trading.Service.Controllers
     {
         private readonly IPublishEndpoint publishEndpoint;
         private readonly IRequestClient<GetPurchaseState> purchaseClient;
+        private readonly ILogger<PurchaseController> logger;
 
-        public PurchaseController(IPublishEndpoint publishEndpoint, IRequestClient<GetPurchaseState> purchaseClient)
+        public PurchaseController(IPublishEndpoint publishEndpoint, IRequestClient<GetPurchaseState> purchaseClient, ILogger<PurchaseController> logger)
         {
             this.publishEndpoint = publishEndpoint;
             this.purchaseClient = purchaseClient;
+            this.logger = logger;
         }
 
         [HttpPost]
         public async Task<IActionResult> PostAsync(SubmitPurchaseDto purchase)
         {
             var userId = User.FindFirstValue("sub");
-            //TODO: Best practice?
+
+                logger.LogInformation("Received purchase request of {Quantity} of item {ItemId} from user {UserId}. Correlation ID:{CorrelationId}",
+                purchase.Quantity,
+                purchase.ItemId,
+                userId,
+                purchase.IdempotencyId);
+
             var message = new PurchaseRequested(
                 Guid.Parse(userId),
                 purchase.ItemId.Value,
