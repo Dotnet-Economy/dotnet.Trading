@@ -76,7 +76,12 @@ namespace dotnet.Trading.Service
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: serviceSettings.ServiceName))
                         .AddHttpClientInstrumentation()
                         .AddAspNetCoreInstrumentation()
-                        .AddConsoleExporter();
+                        .AddJaegerExporter(options => {
+                            var jaegerSetttings = Configuration.GetSection(nameof(JaegerSetttings)).Get<JaegerSetttings>();
+
+                            options.AgentHost = jaegerSetttings.Host;
+                            options.AgentPort = jaegerSetttings.Port;
+                        });
             });
         }
 
