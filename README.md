@@ -1,3 +1,5 @@
+[![Trading CICD](https://github.com/Dotnet-Economy/dotnet.Trading/actions/workflows/cicd.yml/badge.svg?branch=main)](https://github.com/Dotnet-Economy/dotnet.Trading/actions/workflows/cicd.yml)
+
 # dotnet.Trading
 
 Dotnet Economy Trading microservice

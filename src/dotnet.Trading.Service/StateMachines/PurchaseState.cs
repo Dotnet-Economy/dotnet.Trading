@@ -1,6 +1,5 @@
 using System;
-using Automatonymous;
-using MassTransit.Saga;
+using MassTransit;
 
 namespace dotnet.Trading.Service.StateMachines
 {

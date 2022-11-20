@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using dotnet.Common.HealthChecks;
 using dotnet.Common.Identity;
 using dotnet.Common.Logging;
@@ -13,7 +14,6 @@ using dotnet.Trading.Service.Exceptions;
 using dotnet.Trading.Service.Settings;
 using dotnet.Trading.Service.SignalR;
 using dotnet.Trading.Service.StateMachines;
-using GreenPipes;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,7 +21,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
 namespace dotnet.Trading.Service
@@ -50,7 +49,7 @@ namespace dotnet.Trading.Service
             {
                 options.SuppressAsyncSuffixInActionNames = false;
             })
-            .AddJsonOptions(options => options.JsonSerializerOptions.IgnoreNullValues = true);
+            .AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition=JsonIgnoreCondition.WhenWritingNull);
 
             services.AddSwaggerGen(c =>
             {
@@ -129,10 +128,6 @@ namespace dotnet.Trading.Service
             EndpointConvention.Map<ComotOkubo>(new Uri(queueSettings.ComotOkuboQueueAddress));
             EndpointConvention.Map<SubtractItems>(new Uri(queueSettings.SubtractItemsQueueAddress));
 
-            //Opens up the bus that controls where the messages go
-            services.AddMassTransitHostedService();
-            //Registers every client used across the application
-            services.AddGenericRequestClient();
         }
     }
 }

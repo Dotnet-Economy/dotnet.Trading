@@ -1,16 +1,15 @@
 using System;
 using System.Threading.Tasks;
-using Automatonymous;
 using dotnet.Common;
 using dotnet.Trading.Service.Contracts;
 using dotnet.Trading.Service.Entities;
 using dotnet.Trading.Service.Exceptions;
 using dotnet.Trading.Service.StateMachines;
-using GreenPipes;
+using MassTransit;
 
 namespace dotnet.Trading.Service.Activities
 {
-    public class CalculatePurchaseTotalActivity : Activity<PurchaseState, PurchaseRequested>
+    public class CalculatePurchaseTotalActivity : IStateMachineActivity<PurchaseState, PurchaseRequested>
     {
         private readonly IRepository<CatalogItem> repository;
 
@@ -24,19 +23,19 @@ namespace dotnet.Trading.Service.Activities
             visitor.Visit(this);
         }
 
-        public async Task Execute(BehaviorContext<PurchaseState, PurchaseRequested> context, Behavior<PurchaseState, PurchaseRequested> next)
+        public async Task Execute(BehaviorContext<PurchaseState, PurchaseRequested> context, IBehavior<PurchaseState, PurchaseRequested> next)
         {
-            var message = context.Data;
+            var message = context.Message;
             var item = await repository.GetAsync(message.ItemId);
             if (item == null) { throw new UnknownItemException(message.ItemId); }
 
-            context.Instance.PurchaseTotal = item.Price * message.Quantity;
-            context.Instance.LastUpdated = DateTimeOffset.UtcNow;
+            context.Saga.PurchaseTotal = item.Price * message.Quantity;
+            context.Saga.LastUpdated = DateTimeOffset.UtcNow;
 
             await next.Execute(context).ConfigureAwait(false);
         }
 
-        public Task Faulted<TException>(BehaviorExceptionContext<PurchaseState, PurchaseRequested, TException> context, Behavior<PurchaseState, PurchaseRequested> next) where TException : Exception
+        public Task Faulted<TException>(BehaviorExceptionContext<PurchaseState, PurchaseRequested, TException> context, IBehavior<PurchaseState, PurchaseRequested> next) where TException : Exception
         {
             return next.Faulted(context);
         }
