@@ -22,6 +22,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace dotnet.Trading.Service
 {
@@ -64,6 +66,18 @@ namespace dotnet.Trading.Service
                     .AddMongoDb();
 
             services.AddSeqLogging(Configuration);
+
+            services.AddOpenTelemetryTracing(builder =>
+            {
+                var serviceSettings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+
+                builder.AddSource(serviceSettings.ServiceName)
+                        .AddSource("MassTransit")
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: serviceSettings.ServiceName))
+                        .AddHttpClientInstrumentation()
+                        .AddAspNetCoreInstrumentation()
+                        .AddConsoleExporter();
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
