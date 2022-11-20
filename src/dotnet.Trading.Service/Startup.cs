@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
 namespace dotnet.Trading.Service
@@ -61,6 +62,12 @@ namespace dotnet.Trading.Service
 
             services.AddHealthChecks()
                     .AddMongoDb();
+
+            services.AddLogging(loggingBuilder =>
+            {
+                var seqSettings = Configuration.GetSection(nameof(SeqSettings)).Get<SeqSettings>();
+                loggingBuilder.AddSeq(serverUrl: seqSettings.ServerUrl);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
