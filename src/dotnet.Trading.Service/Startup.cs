@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using dotnet.Common.HealthChecks;
 using dotnet.Common.Identity;
+using dotnet.Common.Logging;
 using dotnet.Common.MassTransit;
 using dotnet.Common.MongoDB;
 using dotnet.Common.Settings;
@@ -63,11 +64,7 @@ namespace dotnet.Trading.Service
             services.AddHealthChecks()
                     .AddMongoDb();
 
-            services.AddLogging(loggingBuilder =>
-            {
-                var seqSettings = Configuration.GetSection(nameof(SeqSettings)).Get<SeqSettings>();
-                loggingBuilder.AddSeq(serverUrl: seqSettings.ServerUrl);
-            });
+            services.AddSeqLogging(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
