@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using dotnet.Common.Settings;
 using dotnet.Identity.Contracts;
 using dotnet.Inventory.Contracts;
 using dotnet.Trading.Service.Activities;
 using dotnet.Trading.Service.Contracts;
 using dotnet.Trading.Service.SignalR;
 using MassTransit;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace dotnet.Trading.Service.StateMachines
@@ -14,6 +18,9 @@ namespace dotnet.Trading.Service.StateMachines
 
         private readonly MessageHub hub;
         private readonly ILogger<PurchaseStateMachine> logger;
+        private readonly Counter<int> purchaseStartedCounter;
+        private readonly Counter<int> purchaseFailedCounter;
+        private readonly Counter<int> purchaseSuccessCounter;
         public State Accepted { get; }
         public State ItemsGranted { get; }
         public State Completed { get; }
@@ -26,7 +33,7 @@ namespace dotnet.Trading.Service.StateMachines
         public Event<Fault<GrantItems>> GrantItemsFaulted { get; }
         public Event<Fault<ComotOkubo>> ComotOkuboFaulted { get; }
 
-        public PurchaseStateMachine(MessageHub hub, ILogger<PurchaseStateMachine> logger)
+        public PurchaseStateMachine(MessageHub hub, ILogger<PurchaseStateMachine> logger, IConfiguration configuration)
         {
             InstanceState(state => state.CurrentState);
             ConfigureEvents();
@@ -38,6 +45,12 @@ namespace dotnet.Trading.Service.StateMachines
             ConfigureCompleted();
             this.hub = hub;
             this.logger = logger;
+
+            var settings = configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+            Meter meter = new(settings.ServiceName);
+            purchaseStartedCounter = meter.CreateCounter<int>("PurchaseStarted");
+            purchaseFailedCounter = meter.CreateCounter<int>("PurchaseFailed");
+            purchaseSuccessCounter = meter.CreateCounter<int>("PurchaseSuccess");
         }
 
         private void ConfigureEvents()
@@ -67,6 +80,10 @@ namespace dotnet.Trading.Service.StateMachines
                     context.Saga.LastUpdated = context.Saga.Received;
                     logger.LogInformation("Calculating total price for purchase with Correlation ID:{CorrelationId}...", 
                     context.Saga.CorrelationId);
+                    purchaseStartedCounter.Add(1, 
+                                            new KeyValuePair<string, object>(
+                                                            nameof(context.Saga.ItemId), 
+                                                            context.Saga.ItemId));
                 })
                 .Activity(x => x.OfType<CalculatePurchaseTotalActivity>())
                 .Send((context => new GrantItems(
@@ -85,6 +102,10 @@ namespace dotnet.Trading.Service.StateMachines
                             "Error calculating total price for purchase with Correlation ID:{CorrelationId}. Error:{ErrorMessage}", 
                             context.Saga.CorrelationId,
                             context.Saga.ErrorMessage);
+                        purchaseFailedCounter.Add(1, 
+                                            new KeyValuePair<string, object>(
+                                                            nameof(context.Saga.ItemId), 
+                                                            context.Saga.ItemId));
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga))
@@ -120,6 +141,10 @@ namespace dotnet.Trading.Service.StateMachines
                             "Error granting items for purchase with Correlation ID:{CorrelationId}. Error:{ErrorMessage}", 
                             context.Saga.CorrelationId,
                             context.Saga.ErrorMessage);
+                    purchaseFailedCounter.Add(1, 
+                                            new KeyValuePair<string, object>(
+                                                            nameof(context.Saga.ItemId), 
+                                                            context.Saga.ItemId));
                 })
                 .TransitionTo(Faulted)
                 .ThenAsync(async context => await hub.SendStatusAsync(context.Saga))
@@ -148,6 +173,10 @@ namespace dotnet.Trading.Service.StateMachines
                             context.Saga.CorrelationId,
                             context.Saga.UserId
                         );
+                        purchaseSuccessCounter.Add(1, 
+                                            new KeyValuePair<string, object>(
+                                                            nameof(context.Saga.ItemId), 
+                                                            context.Saga.ItemId));
                     })
                     .TransitionTo(Completed)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga)),
@@ -166,6 +195,10 @@ namespace dotnet.Trading.Service.StateMachines
                             "Failed to comot the total price of purchase with CorrelationId:{CorrelationId} from User:{UserId}",
                             context.Saga.CorrelationId,
                             context.Saga.UserId);
+                        purchaseFailedCounter.Add(1, 
+                                            new KeyValuePair<string, object>(
+                                                            nameof(context.Saga.ItemId), 
+                                                            context.Saga.ItemId));
                     })
                     .TransitionTo(Faulted)
                     .ThenAsync(async context => await hub.SendStatusAsync(context.Saga))

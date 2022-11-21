@@ -23,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -69,7 +70,14 @@ namespace dotnet.Trading.Service
             services.AddSeqLogging(Configuration)
                     .AddTracing(Configuration);
 
-            
+            services.AddOpenTelemetryMetrics(builder =>
+            {
+                var settings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+                builder.AddMeter(settings.ServiceName)
+                        .AddHttpClientInstrumentation()
+                        .AddAspNetCoreInstrumentation()
+                        .AddPrometheusExporter();
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -90,6 +98,7 @@ namespace dotnet.Trading.Service
                 });
             }
 
+            app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
             app.UseHttpsRedirection();
 
