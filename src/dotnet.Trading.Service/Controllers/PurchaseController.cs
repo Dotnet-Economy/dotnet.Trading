@@ -32,11 +32,11 @@ namespace dotnet.Trading.Service.Controllers
         {
             var userId = User.FindFirstValue("sub");
 
-                logger.LogInformation("Received purchase request of {Quantity} of item {ItemId} from user {UserId}. Correlation ID:{CorrelationId}",
-                purchase.Quantity,
-                purchase.ItemId,
-                userId,
-                purchase.IdempotencyId);
+            logger.LogInformation("Received purchase request of {Quantity} of item {ItemId} from user {UserId}. Correlation ID:{CorrelationId}",
+            purchase.Quantity,
+            purchase.ItemId,
+            userId,
+            purchase.IdempotencyId);
 
             var message = new PurchaseRequested(
                 Guid.Parse(userId),
