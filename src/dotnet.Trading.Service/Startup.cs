@@ -68,16 +68,10 @@ namespace dotnet.Trading.Service
                     .AddMongoDb();
 
             services.AddSeqLogging(Configuration)
-                    .AddTracing(Configuration);
+                    .AddTracing(Configuration)
+                    .AddMetrics(Configuration);
 
-            services.AddOpenTelemetryMetrics(builder =>
-            {
-                var settings = Configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
-                builder.AddMeter(settings.ServiceName)
-                        .AddHttpClientInstrumentation()
-                        .AddAspNetCoreInstrumentation()
-                        .AddPrometheusExporter();
-            });
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
